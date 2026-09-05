@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Function Hook Ideas</title>
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1c1a17; --muted: #6b6560; --line: #e2ddd6;
+    --card: #ffffff; --accent: #b4531f; --accent-soft: #fdf1e9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171614; --fg: #eae6e0; --muted: #9a938b; --line: #33302c;
+      --card: #201e1b; --accent: #e08e5c; --accent-soft: #2a211a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 140px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  h2 { font-size: 15px; margin: 32px 0 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); }
+  h2 .n { color: var(--muted); font-family: inherit; font-weight: 400; }
+  .evdesc { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .idea { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .idea.on { border-color: var(--accent); background: var(--accent-soft); }
+  .row { display: flex; gap: 10px; align-items: flex-start; }
+  .row input[type=checkbox] { margin-top: 4px; width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+  .t { font-weight: 600; }
+  .d { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  textarea { width: 100%; margin-top: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px;
+             background: var(--bg); color: var(--fg); font: inherit; font-size: 13.5px; resize: vertical; min-height: 52px; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
+         padding: 12px 20px; display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--card); color: var(--fg); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .count { color: var(--muted); font-size: 13.5px; }
+  .note { max-width: 880px; margin: 28px auto 0; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+  #out { display: none; }
+  #out.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Function hook ideas</h1>
+  <p class="sub">Tick what you want built. Type a note on any idea to change it. Export writes <code>function-hook-ideas.json</code> to your Downloads folder.</p>
+
+  <div id="list"></div>
+
+  <div class="note">
+    <h2>Anything the list misses</h2>
+    <textarea id="global" placeholder="Your own idea, or a rule about how these should work."></textarea>
+  </div>
+
+  <div id="out">
+    <h2>Copy this if the download did not work</h2>
+    <textarea id="json" rows="14"></textarea>
+  </div>
+</div>
+
+<div class="bar">
+  <span class="count" id="count">0 picked</span>
+  <button class="primary" id="export">Export JSON</button>
+  <button id="copy">Copy to clipboard</button>
+</div>
+
+<script>
+const DATA = [
+ {ev:"tool.call", desc:"Every tool the model runs. Answer instead of it, rewrite its input, or deny it.", ideas:[
+  ["tc1","Target guard before kubectl","Match Bash commands starting with kubectl, gcloud or aws. Read the active context with $.process.run, then $.ui.ask to confirm before the command runs."],
+  ["tc2","Analytics instance fixer","Match the analytics MCP tools. If the input has no instance field, rewrite it to prod and log the fix. The staging default stops causing wrong numbers."],
+  ["tc3","Archive instead of delete","Match Bash with rm. Rewrite the command into a mv into archives/ and tell the model what happened. Your archive-not-delete rule stops depending on my memory."],
+  ["tc4","Bare ticket key blocker","Match Write and Edit. Scan the content for RD-123 style keys with no link around them. Deny with the exact line, so the check runs before the file lands, not after."],
+  ["tc5","Slow tool budget","Time every call, keep a rolling average in $.store, and toast when a call passes its own average by 3x. You see a hang while it happens."]]},
+
+ {ev:"tool.describe", desc:"The description of a tool, as the model reads it, at the moment it chooses.", ideas:[
+  ["td1","Repo rules at the point of use","Append the repo's rule to the tool that breaks it. The analytics tools carry \"always pass instance: prod\". The rule sits in the description, not in a CLAUDE.md I may skim."],
+  ["td2","Cost label","Append the average runtime and the average output size from $.store. The model reads the price before it picks the tool."],
+  ["td3","Retire a tool without removing it","Rewrite a tool's description to say when it is the wrong choice and which tool replaces it."]]},
+
+ {ev:"PreToolUse", desc:"The old settings-file hook event. It still runs, and a function hook can wrap it.", ideas:[
+  ["pt1","See what the old hooks decide","Log every legacy decision with its matcher, so you can find which shell hook blocked a call."],
+  ["pt2","Migrate one hook at a time","Answer for one matcher in the module and let the rest fall through to the shell scripts. You move off the scripts without a big-bang rewrite."]]},
+
+ {ev:"prompt.submit", desc:"Your message, before it reaches the model. Rewrite it, add context, or drop it.", ideas:[
+  ["ps1","Ticket expander","Find every RD-123 in your text. Fetch the summary and status with $.mcp.call, attach them as a context block, and rewrite the key into a full link. You type the key, I read the ticket."],
+  ["ps2","Date normaliser","Rewrite \"tomorrow\", \"next Tuesday\" and \"end of sprint\" into DD.MM.YYYY before I see them. The date rule stops being a thing I can get wrong."],
+  ["ps3","Secret scrubber","The hidden-json plugin: values from a .hidden.json never enter the message, placeholders do, and the tool call fills them back in."],
+  ["ps4","Queue auto-attach","When your text says \"what's next\" or \"today\", attach inbox/YYYY-MM-DD-todo-queue.md as a context block. No slash command needed."],
+  ["ps5","Draft catcher","When your text names an outward write (Jira, Confluence, email), attach the approval rule as a context block so it is in front of me at that turn."]]},
+
+ {ev:"prompt.section", desc:"One section of the system prompt. Replace or trim its text.", ideas:[
+  ["pn1","Per-folder persona","Swap the output-style section by working directory. A consulting repo gets the product-owner voice. A code repo gets a terser one."],
+  ["pn2","Measured trim","Drop one section, run a week, and compare. $.store keeps the count of turns per variant, so the decision uses data, not taste."],
+  ["pn3","Rule reminder that fires late","Append a short rule block only after turn 30, when the early context has faded."]]},
+
+ {ev:"prompt.context", desc:"The blocks attached to the first message: CLAUDE.md, your email, the date. Add your own.", ideas:[
+  ["pc1","Sprint state block","Add a block with the frontier items and the blocked items from the repo's planning script. Every session starts knowing the board."],
+  ["pc2","Repo state block","Add the branch, the unpushed commit count and the last deploy date. I stop guessing where the code stands."],
+  ["pc3","Date in your format","Replace the engine's currentDate block with DD.MM.YYYY, so the format rule is met at the source."]]},
+
+ {ev:"session.start", desc:"Fires once, before the first prompt. The place for setup and for background work.", ideas:[
+  ["ss1","Mirror freshness check","Run git fetch on each mirror. Toast the ones more than 3 days behind. You learn it before you rely on stale code."],
+  ["ss2","Calendar in the status line","Read today's meetings and put the next one in $.ui.status. It stays on screen without a turn."],
+  ["ss3","Register the plugin's tools","Await $.tool.register here so the tools are listed on turn one."]]},
+
+ {ev:"turn.start", desc:"Each turn begins. You get the text and the turn id.", ideas:[
+  ["ts1","Worklog stamp","Append the turn's first line and the clock time to a daily log. Tempo entries stop being reconstructed from memory."],
+  ["ts2","Context warning","Count turns in $.store. Toast at 50 that the window is filling, before the summary lands mid-task."]]},
+
+ {ev:"turn.step", desc:"Each model reply inside a turn, with the answer text, the tool uses and the stop reason.", ideas:[
+  ["tp1","Verbosity rewriter, phase one","Send the finished answer to a small model, cache the short version by message id, then invalidate the render. You read 60 words, I keep the original."],
+  ["tp2","Rule-break counter","Count the answers over 200 words and keep the tally in $.store. The brevity rule gets a number instead of a feeling."],
+  ["tp3","Refusal and truncation alarm","Toast on stopReason max_tokens or refusal, so a silent cut does not look like a finished answer."]]},
+
+ {ev:"turn.complete", desc:"The turn ends. Everything the turn did is known.", ideas:[
+  ["tk1","Validator on every markdown file","Run validate_action_items.py on each .md written this turn. The check stops being a step I must remember."],
+  ["tk2","Session journal","Append one line per turn to inbox/YYYY-MM-DD-session.md: what changed, which files. A retro reads it."],
+  ["tk3","Audio done signal","$.audio.speak a short line when a turn over 2 minutes ends. You leave the terminal and come back on the sound."]]},
+
+ {ev:"agent.offer", desc:"Which subagent types the model is allowed to see.", ideas:[
+  ["ao1","Ops lockdown","Hide the exploration agents when the prompt looks operational. Your \"no broad searches for ops\" rule becomes a fact, not a request."],
+  ["ao2","One agent per job","Offer only the agent that matches the folder. Fewer wrong picks, fewer tokens."]]},
+
+ {ev:"agent.spawn", desc:"A subagent starts. You see and can rewrite its prompt.", ideas:[
+  ["as1","Brief standard","Append your rule to every subagent prompt: judge the output, name the harms, no numeric pass gate. One place, every agent."],
+  ["as2","Parallel cap","Count running spawns. Deny past 3 with a clear reason. Cost stays bounded."],
+  ["as3","Spawn log","Write each prompt and its answer to disk. You can audit what I asked an agent to do."]]},
+
+ {ev:"skill.prompt", desc:"A skill's instructions, as the model reads them.", ideas:[
+  ["sk1","Patch a bundled skill","Append the repo rules to ticket-writer without forking it. Upstream updates still land."],
+  ["sk2","Skill A/B","Serve two versions of a skill's text by session, record which sessions produced work you kept."],
+  ["sk3","Skill usage counter","Count invocations per skill in $.store. You learn which skills are dead weight."]]},
+
+ {ev:"attribution.text", desc:"The text on commits, PRs and remedies.", ideas:[
+  ["at1","Branch key in every commit","Read the ticket key from the branch name and put it in the subject line. No commit loses its ticket."],
+  ["at2","House commit style","Rewrite the subject into the repo's own convention. The style stops depending on which model wrote it."]]},
+
+ {ev:"ui.render", desc:"Everything drawn on screen. Change what you see without changing what I read.", ideas:[
+  ["ur1","Verbosity rewriter, phase two","Match AssistantMessage. Draw the short cached version. The transcript keeps the long one, so my next turn is not damaged."],
+  ["ur2","Git badge on file rows","Match ToolUse. Show modified, untracked or clean beside every Read and Edit path."],
+  ["ur3","Fold long tool output","Match ToolResult. Over 40 lines, draw a one-line summary and the line count. Press to expand."],
+  ["ur4","Target banner","Match SessionMode. Show the active kubectl context and analytics instance at all times. The wrong-target error becomes visible before it happens."],
+  ["ur5","Empty-prompt hint","Match PromptHint. When the prompt is empty, show the top item from today's queue."],
+  ["ur6","Dashboard above the prompt","Match AbovePrompt. Draw open blockers, unpushed commits, and the hours logged today."],
+  ["ur7","Cost in the spinner","Match Spinner. Show tokens spent this turn while it runs."]]},
+
+ {ev:"ui.resolve", desc:"The element table every plugin below you draws with. Restyle or restrict it.", ideas:[
+  ["ux1","One palette","Wrap Text and Box to force your colours on every plugin's drawing."],
+  ["ux2","No buttons in a shared session","Remove Button from the table so no plugin can draw a clickable action during a screen share."]]},
+
+ {ev:"ui.press / ui.input / ui.select", desc:"Someone presses a button, types in a field, or picks from a select that a plugin drew.", ideas:[
+  ["ui1","Approve, edit, reject on a draft","Draw three buttons under every ticket draft. Press writes the verdict into the file. Review stops being a chat round."],
+  ["ui2","Target switcher","A select in the banner switches kubectl context. It confirms first and shows the new target."],
+  ["ui3","Ticket search field","An Input that queries Jira as you type and pastes the key into the prompt."]]},
+
+ {ev:"engine.create", desc:"Builds the engine interface itself. Add your own noun, or wrap an existing one.", ideas:[
+  ["ec1","A $.jira noun","Add $.jira.issue and $.jira.search backed by the MCP calls. Other plugins call them, and each call is itself a hookable event."],
+  ["ec2","Audited filesystem","Wrap $.fs so every read and write lands in an audit file. You can answer \"what did it touch\" for any session."],
+  ["ec3","A $.repo noun","Expose the repo's own scripts, the queue and the people directory as methods. The repo's own tools become first class."]]}
+];
+
+const list = document.getElementById('list');
+DATA.forEach(g => {
+  const h = document.createElement('h2');
+  h.innerHTML = g.ev + ' <span class="n">(' + g.ideas.length + ')</span>';
+  list.appendChild(h);
+  const p = document.createElement('p');
+  p.className = 'evdesc'; p.textContent = g.desc;
+  list.appendChild(p);
+  g.ideas.forEach(([id, title, desc]) => {
+    const d = document.createElement('div');
+    d.className = 'idea'; d.dataset.id = id; d.dataset.ev = g.ev; d.dataset.title = title;
+    d.innerHTML = '<label class="row"><input type="checkbox"><span><span class="t"></span><span class="d"></span></span></label>'
+                + '<textarea placeholder="Change it, or say why not."></textarea>';
+    d.querySelector('.t').textContent = title;
+    d.querySelector('.d').textContent = ' - ' + desc;
+    d.querySelector('input').addEventListener('change', e => { d.classList.toggle('on', e.target.checked); tally(); });
+    list.appendChild(d);
+  });
+});
+
+function tally() {
+  const n = document.querySelectorAll('.idea input:checked').length;
+  document.getElementById('count').textContent = n + ' picked';
+}
+
+function build() {
+  const picks = [];
+  document.querySelectorAll('.idea').forEach(d => {
+    const on = d.querySelector('input').checked;
+    const note = d.querySelector('textarea').value.trim();
+    if (on || note) picks.push({ id: d.dataset.id, event: d.dataset.ev, title: d.dataset.title, build: on, note: note || null });
+  });
+  return JSON.stringify({ file: 'function-hook-ideas', date: new Date().toISOString().slice(0,10),
+                          picks, note: document.getElementById('global').value.trim() || null }, null, 2);
+}
+
+document.getElementById('export').addEventListener('click', () => {
+  const text = build();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = 'function-hook-ideas.json';
+  a.click();
+  const out = document.getElementById('out');
+  out.classList.add('show');
+  document.getElementById('json').value = text;
+});
+
+document.getElementById('copy').addEventListener('click', async () => {
+  const text = build();
+  try { await navigator.clipboard.writeText(text); document.getElementById('copy').textContent = 'Copied'; }
+  catch { const out = document.getElementById('out'); out.classList.add('show'); document.getElementById('json').value = text; }
+});
+</script>
+</body>
+</html>

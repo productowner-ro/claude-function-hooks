@@ -105,6 +105,8 @@ on('attribution.text', { kind: 'pr' }, async ($, e, next) => {
 })
 ```
 
+This writes the suggestion into the body. [ui-select.md](ui-select.md) does the other half: it lets you pick from those names without typing a message.
+
 **Why not a CODEOWNERS file?** Use one if you have one. This works when you do not, and it can suggest rather than require.
 
 **The bill.** One subprocess per pull request.

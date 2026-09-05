@@ -88,11 +88,11 @@ Read it back with `$.store.get('draft:note')` when you draw the field again, and
 
 ---
 
-## 4. Count what people type into your plugin
+## 4. Find out whether anyone uses the field you built
 
-You built a field. You do not know whether anyone uses it, or what they put in it.
+You added a field to your plugin. You do not know whether it gets used.
 
-The hook counts uses without recording content.
+The counting pattern from [turn-step.md](turn-step.md), keyed by element. Note that it stores a count and never the text. Do the same.
 
 ```tsx
 on('ui.input', async ($, e, next) => {
@@ -102,11 +102,7 @@ on('ui.input', async ($, e, next) => {
 })
 ```
 
-Note that it stores a count, not the text. Do the same.
-
-**The bill.** Nothing.
-
-**The trap.** Keystroke counts are not use counts. Ten letters is one search. Divide, or count on submit instead.
+**The trap.** Keystrokes are not uses. Ten letters is one search. Count on submit instead, or divide.
 
 ---
 

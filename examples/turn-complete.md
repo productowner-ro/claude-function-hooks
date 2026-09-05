@@ -66,6 +66,8 @@ on('turn.complete', async ($, e, next) => {
 
 The file answers three questions: what changed, when, and what was asked for. That is most of a retrospective.
 
+This is one of four logging examples in this folder, and they answer different questions. [tool-call.md](tool-call.md) records every command. [engine-create.md](engine-create.md) records every file read. [agent-spawn.md](agent-spawn.md) records every subagent brief. This one records what changed and why.
+
 **Why not read the git log?** Commit messages describe the code. This records the intent behind it, in your words.
 
 **The bill.** One subprocess and one append per turn.

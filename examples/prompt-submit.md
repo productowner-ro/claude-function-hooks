@@ -70,6 +70,8 @@ on('prompt.submit', ($, e, next) => {
 
 You keep writing like a human. Claude reads "tomorrow (06.09.2026)".
 
+This says which date you meant. To also fix how dates are written, see [prompt-context.md](prompt-context.md).
+
 **Why not a rule in `CLAUDE.md`?** "Always resolve relative dates" works most of the time. A calendar does not work most of the time. It works.
 
 **The bill.** Nothing. No network, no tokens.
@@ -123,11 +125,49 @@ on('prompt.submit', async ($, e, next) => {
 })
 ```
 
+This fires only when your words match. If every session needs the file regardless, attach it once at the start instead, as [prompt-context.md](prompt-context.md) does.
+
 **Why not a slash command?** It works until you forget, and then you get a confident answer built on nothing.
 
 **The bill.** The file's words, every matching turn. Cheap for a list. Expensive for a policy manual.
 
 **The trap.** `$.fs` reads text, inside the session folder only. Anything outside is refused.
+
+---
+
+## 5. Hand Claude a tool the moment you need it
+
+You ask a question about the database. Claude has no database tool, so it writes shell commands and guesses at the schema. You could install a database tool permanently, but then its description costs tokens in every session, including the hundreds that never touch a database.
+
+The hook registers the tool when your words call for it, before the message goes through.
+
+```ts
+const ON_DEMAND = [
+  { match: /\b(query|schema|table|database)\b/i, spec: {
+      name: 'query', description: 'Run a read-only SQL query against the reporting database.',
+      inputSchema: { type: 'object', properties: { sql: { type: 'string' } }, required: ['sql'] } } },
+  { match: /\b(deploy|rollback|release)\b/i, spec: {
+      name: 'deployStatus', description: 'Return the last five deployments and their status.',
+      inputSchema: { type: 'object', properties: {} } } },
+]
+
+on('prompt.submit', async ($, e, next) => {
+  for (const { match, spec } of ON_DEMAND) {
+    if (match.test(e.text)) await $.tool.register(spec)
+  }
+  return next(e)
+})
+```
+
+The tool appears for this turn onwards. Your other sessions never see it.
+
+A `tool.call` hook matching `mcp__<your plugin>__query` serves it. That hook is where the connection details live, so the credentials never enter the conversation. Section 3 above covers that part.
+
+**Why not install it permanently?** Because every installed tool is a description Claude reads in every session, whether it is relevant or not. This is the same trade as [session-start.md](session-start.md) makes by folder, decided one message at a time instead.
+
+**The bill.** One registration on a matching message. Nothing on the rest.
+
+**The trap.** Registering a tool does not explain it. If the tool needs care, put that in its description, as [tool-describe.md](tool-describe.md) shows.
 
 ---
 

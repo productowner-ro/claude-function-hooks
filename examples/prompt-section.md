@@ -104,6 +104,8 @@ on('prompt.section', { name: 'house-rules' }, async ($, e, next) => {
 
 After two weeks you compare the work you kept against the variant that produced it.
 
+This is the split-test pattern the other pages refer to. Split on the session id, store which variant that session got, and compare later. [skill-prompt.md](skill-prompt.md) applies the same three lines to a skill's instructions instead of a prompt section.
+
 **Why not just decide?** You have been deciding for a year and the file only gets longer.
 
 **The bill.** Nothing.

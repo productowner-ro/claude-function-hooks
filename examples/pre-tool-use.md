@@ -83,6 +83,8 @@ on('PreToolUse', async ($, e, next) => {
 })
 ```
 
+[tool-call.md](tool-call.md) does the same job with a fixed pattern and no model call. Use that one when you know the commands. Use this one when you do not.
+
 **The bill.** One small model call per shell command. You feel it. Limit it to commands that already look suspicious.
 
 **The trap.** "Read-only" from a model is an opinion. Use this to widen a net, never as the only net.

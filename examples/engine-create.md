@@ -10,9 +10,9 @@ Every hook receives `$`, the engine interface. `$.fs` reads files. `$.http` make
 |---|---|
 | The hook hands back | additions to `$`, as `{ noun: { method } }` |
 
-Two things you can do here: add a noun that did not exist, or wrap one that did.
+Two things you can do here. Add a name that did not exist, such as `$.jira`. Or wrap one that did, such as `$.fs`.
 
-Here is the part that makes it interesting. Every method on `$` is itself an event. So when you add `$.jira.issue`, you have not just written a function. You have created an event that any other hook can sit on top of: to cache it, log it, rewrite its arguments, or refuse it. Your capability gets the same treatment as the built-in ones, for free.
+The part worth understanding: every method on `$` is an event. When you add `$.jira.issue`, you did not write a function. You created an event called `jira.issue`, and any hook can now sit on top of it and cache it, log it, change its arguments or refuse it. Example 2 does exactly that.
 
 ### "Why not just write it in CLAUDE.md?"
 
@@ -20,11 +20,19 @@ This is not about instructing Claude. It is about what the plugins on your machi
 
 ---
 
-## 1. Add a capability your other hooks can use
+## 1. Stop repeating the same Jira call in every hook
 
-Four of your hooks call Jira. Each one repeats the same MCP call, the same error handling, the same field names. When Jira changes, you edit four hooks.
+Say you built three of the hooks from this folder. The one in [prompt-submit.md](prompt-submit.md) fetches a ticket when you mention its number. The one in [tool-describe.md](tool-describe.md) checks a ticket exists. The one in [attribution-text.md](attribution-text.md) reads the ticket off the branch.
 
-The hook adds a noun.
+All three contain this line:
+
+```ts
+const res = await $.mcp.call('atlassian', 'getJiraIssue', { key })
+```
+
+Jira renames a field. You now edit three hooks and miss one.
+
+The hook adds `jira` to the engine, once.
 
 ```ts
 on('engine.create', ($, e, next) => ({
@@ -37,21 +45,21 @@ on('engine.create', ($, e, next) => ({
 }))
 ```
 
-Now any hook writes `await $.jira.issue('ABC-1')`. One place knows how Jira works.
+Every hook now writes `await $.jira.issue('ABC-1')`. When Jira changes, you edit one function.
 
-**Why not a shared function?** A function is not an event. This is.
+**Why not a shared function you import?** An imported function is only a function. This one is an event, which is what the next example needs.
 
 **The bill.** Nothing.
 
-**The trap.** You are adding to a shared surface. Pick a name nobody else will pick.
+**The trap.** You are adding a name to a surface every plugin shares. Pick one nobody else will pick.
 
 ---
 
-## 2. Put a cache in front of your own capability
+## 2. Fetch the same ticket once instead of six times
 
-The same ticket is fetched six times in one session.
+You mention ABC-1 six times in a session. Jira gets called six times. Five of those calls return the same answer and cost you a wait each.
 
-Because `$.jira.issue` is an event, a second hook can wrap it. No change to the first one.
+You do not touch the code from example 1. `$.jira.issue` is an event, so a second hook sits on top of it.
 
 ```ts
 on('jira.issue', async ($, e, next) => {
@@ -63,7 +71,7 @@ on('jira.issue', async ($, e, next) => {
 })
 ```
 
-This is the same shape as every other hook on this site: before, after, instead, modifying. Your own capability behaves like a built-in one.
+The first call goes to Jira. The next five come from `$.store`. Nothing else changed, and the hook that added `$.jira` does not know this happened.
 
 **The bill.** Nothing.
 
@@ -103,11 +111,11 @@ Every plugin below yours now goes through your version, whether or not it knows.
 
 ---
 
-## 4. Give your team's tools a single front door
+## 4. Turn your repository's scripts into engine methods
 
-Your repository has six scripts. Everyone remembers a different subset. Each hook that uses one repeats the path and the arguments.
+Your repository has a script that lists open work and one that checks a file. Three of your hooks call them, each spelling out the path and the arguments. Someone moves the scripts into a subfolder and all three break.
 
-The hook wraps them all in one noun.
+The hook puts them behind one name.
 
 ```ts
 on('engine.create', ($, e, next) => ({
@@ -124,9 +132,9 @@ on('engine.create', ($, e, next) => ({
 }))
 ```
 
-`$.repo.openWork()` reads better than a subprocess call, and when the script moves you change one line.
+The hooks call `$.repo.openWork()`. When the script moves, you change one line here.
 
-**Why not call the scripts directly?** Because six hooks calling six scripts means six places to update.
+**Why not call the scripts directly?** Three hooks calling two scripts is six places to update. This is one.
 
 **The bill.** Nothing.
 

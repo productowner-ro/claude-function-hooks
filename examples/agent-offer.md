@@ -86,7 +86,7 @@ on('agent.offer', async ($, e, next) => {
 })
 ```
 
-Set `demo-mode` from a button, a command, or by hand before you share your screen.
+Set `demo-mode` from a button, a command, or by hand before you share your screen. [ui-resolve.md](ui-resolve.md) reads the same key to stop plugins drawing buttons during a demo. One switch, two effects.
 
 **Why not close the plugin?** Because you want the rest of it running.
 

@@ -63,7 +63,7 @@ on('ui.resolve', async ($, e, next) => {
 })
 ```
 
-Nothing crashes. The button becomes a label.
+Nothing crashes. The button becomes a label. [agent-offer.md](agent-offer.md) reads the same `demo-mode` key to stop subagents starting mid-presentation.
 
 **The bill.** Nothing.
 
@@ -94,11 +94,11 @@ on('ui.resolve', async ($, e, next) => {
 
 ---
 
-## 4. Find out what the plugins on your machine actually draw
+## 4. Find out which plugin drew which part of your screen
 
-You installed four plugins. You do not know which parts of your screen belong to which.
+Something on your screen is wrong. You have four plugins installed and no idea which one is responsible.
 
-The hook records who asked for elements, and where.
+The counting pattern from [turn-step.md](turn-step.md), keyed by `next.origin`, which names the plugin that raised the request.
 
 ```tsx
 on('ui.resolve', async ($, e, next) => {
@@ -108,13 +108,9 @@ on('ui.resolve', async ($, e, next) => {
 })
 ```
 
-`next.origin` names the plugin that raised the request. Read the counts with `$.store.keys()`.
+**The bill.** One store write per resolve, which is often.
 
-**Why does this matter?** Because when something on your screen is wrong, the first question is which plugin drew it.
-
-**The bill.** One store write per resolve. Turn it off once you have your answer.
-
-**The trap.** This fires very often. Leaving it on permanently is a lot of writes for a question you asked once.
+**The trap.** Turn it off once you have the answer. This is a diagnostic, not a permanent hook.
 
 ---
 

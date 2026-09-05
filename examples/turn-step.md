@@ -53,7 +53,7 @@ The transcript keeps the long version, so Claude's next turn reads its own real 
 
 You have a rule about answer length, or format, or tone. You believe it is ignored. You have no numbers.
 
-The hook counts.
+The hook counts. This is the counting pattern the other pages refer to: read a number out of `$.store`, add one, write it back.
 
 ```ts
 on('turn.step', async ($, e, next) => {
@@ -64,7 +64,9 @@ on('turn.step', async ($, e, next) => {
 })
 ```
 
-At the end of the week you have two numbers instead of an argument.
+At the end of the week you have two numbers instead of an argument. Read every key back with `$.store.keys()`.
+
+The same three lines count anything an event carries. Which tools get used (section 4 below). Which skills run, in [skill-prompt.md](skill-prompt.md). Which plugin draws which part of your screen, in [ui-resolve.md](ui-resolve.md).
 
 **Why not judge by feel?** Because you remember the bad ones.
 

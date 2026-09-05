@@ -73,28 +73,41 @@ The status line is not part of the conversation. It costs no tokens and interrup
 
 ---
 
-## 3. Register your own tools before turn one
+## 3. Give Claude different tools in different folders
 
-You built a tool for Claude to call. If you register it late, the first message does not know it exists.
+You have twelve tools. In your documentation folder, nine of them are useless. Claude still reads a description of all twelve in every session, and sometimes picks a wrong one.
 
-The hook registers it here, and the engine waits.
+The hook registers only the tools that fit the folder you opened.
 
 ```ts
+const BY_FOLDER: Record<string, ToolSpec[]> = {
+  '/docs': [
+    { name: 'wordcount', description: 'Count words in a file.', inputSchema: { type: 'object', properties: { path: { type: 'string' } } } },
+    { name: 'readability', description: 'Score a draft for reading level.', inputSchema: { type: 'object', properties: { path: { type: 'string' } } } },
+  ],
+  '/infra': [
+    { name: 'costEstimate', description: 'Estimate the monthly cost of a change.', inputSchema: { type: 'object', properties: {} } },
+  ],
+}
+
 on('session.start', async ($, e, next) => {
-  await $.tool.register({
-    name: 'today',
-    description: "Return today's task list as text.",
-    inputSchema: { type: 'object', properties: {} },
-  })
+  const tools = Object.entries(BY_FOLDER).find(([dir]) => e.cwd.includes(dir))?.[1] ?? []
+  for (const tool of tools) await $.tool.register(tool)
   return next(e)
 })
 ```
 
-The tool is listed as `mcp__<your plugin>__today` from the first message on.
+The engine waits for this event, so every tool you register here is listed from the first message. Registering the same name again replaces it.
 
-**The bill.** Nothing.
+You can also decide from the repository rather than the path. `$.fs.ancestors({ names: ['package.json', 'Makefile'] })` walks up the tree, so a folder with a `Makefile` gets your build tools and one without does not.
 
-**The trap.** Registering the tool is half the job. You also need a `tool.call` hook that matches that name and returns a result. Without it, the call fails.
+**Why not install every tool everywhere?** Each tool's description is read in every session. Twelve tools is a paragraph you pay for constantly and use three of.
+
+**The bill.** Negative. You removed nine descriptions from every session in that folder.
+
+**The trap.** Registering the tool is half the job. You also need a `tool.call` hook matching `mcp__<your plugin>__<name>` that returns a result. Without it, the call fails and says so.
+
+To register a tool part-way through a session, based on what you just asked for, see [prompt-submit.md](prompt-submit.md).
 
 ---
 
@@ -115,7 +128,9 @@ on('session.start', async ($, e, next) => {
 })
 ```
 
-Anything you store here is readable by your other hooks for the rest of the session.
+Anything you store here is readable by your other hooks for the rest of the session. The dashboard in [ui-render.md](ui-render.md) reads this `ci` key.
+
+Use this event when the fact should reach you. Use [prompt-context.md](prompt-context.md) when the fact should reach Claude.
 
 **Why not ask?** Because asking costs a turn, and the answer is the same every morning.
 

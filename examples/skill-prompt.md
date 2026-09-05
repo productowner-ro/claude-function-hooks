@@ -68,7 +68,7 @@ The rules live in a file your team edits. The skill picks them up without anyone
 
 You rewrote a skill's instructions. You think the new version is better. That is a feeling.
 
-The hook serves each version to half your sessions.
+The split-test pattern from [prompt-section.md](prompt-section.md), applied to a skill file.
 
 ```ts
 on('skill.prompt', { skill: 'code-review' }, async ($, e, next) => {
@@ -82,17 +82,15 @@ on('skill.prompt', { skill: 'code-review' }, async ($, e, next) => {
 
 Note which sessions produced reviews you acted on. After twenty sessions you have evidence.
 
-**The bill.** Nothing.
-
 **The trap.** If you do not record the outcome, you have built a random skill picker.
 
 ---
 
 ## 4. Find out which skills you actually use
 
-You have installed a lot of skills. Some have not run in months.
+You installed a lot of skills. Some have not run in months, and each one costs tokens to describe.
 
-The hook counts each one.
+The counting pattern from [turn-step.md](turn-step.md) applies here without changes. Key it by skill name.
 
 ```ts
 on('skill.prompt', async ($, e, next) => {
@@ -101,10 +99,6 @@ on('skill.prompt', async ($, e, next) => {
   return next(e)
 })
 ```
-
-Read the counts with `$.store.keys()` whenever you want to prune.
-
-**The bill.** Nothing.
 
 **The trap.** A skill used twice a year can still be the one that saves a day each time.
 

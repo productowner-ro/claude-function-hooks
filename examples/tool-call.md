@@ -37,6 +37,8 @@ on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
 
 The hook does not ask Claude which cluster it is on. It asks the machine.
 
+This is the last line of defence. Two other pages cover the same risk earlier: [ui-render.md](ui-render.md) keeps the cluster name on your screen, and [ui-select.md](ui-select.md) lets you switch cluster with a confirmation. Together they mean you see it, you change it deliberately, and the command still checks.
+
 **Why not a rule in `CLAUDE.md`?** A rule tells Claude to check. The hook checks.
 
 **The bill.** One subprocess, only on commands that match.
@@ -142,6 +144,8 @@ on('tool.call', async ($, e, next) => {
 ```
 
 Every call, its arguments, how long it took, and whether something blocked it. You can hand the file to someone.
+
+This records what Claude asked to run. Three other pages record different things: [engine-create.md](engine-create.md) records what every plugin read from disk, [turn-complete.md](turn-complete.md) records what changed in folders you care about, and [agent-spawn.md](agent-spawn.md) records what each subagent was told to do. Pick the one that answers the question you actually get asked.
 
 **Why not the transcript?** The transcript is a conversation. This is a list you can search, count and filter.
 

@@ -10,7 +10,7 @@ The reason to use one instead of writing a rule in `CLAUDE.md`: a rule is a requ
 
 | Event | What it touches | Examples |
 |---|---|---|
-| [prompt.submit](prompt-submit.md) | your message before Claude reads it | look up a name, fix a date, hide a password, attach a file |
+| [prompt.submit](prompt-submit.md) | your message before Claude reads it | look up a name, fix a date, hide a password, attach a file, register a tool on demand |
 | [prompt.section](prompt-section.md) | Claude's standing instructions | tone per folder, a late reminder, remove a section, test a rule |
 | [prompt.context](prompt-context.md) | the pages attached to your first message | branch state, open work, date format, remove your email |
 
@@ -26,7 +26,7 @@ The reason to use one instead of writing a rule in `CLAUDE.md`: a rule is a requ
 
 | Event | What it touches | Examples |
 |---|---|---|
-| [session.start](session-start.md) | once, before your first message | stale repository warning, next meeting, register a tool |
+| [session.start](session-start.md) | once, before your first message | stale repository warning, next meeting, different tools per folder |
 | [turn.start](turn-start.md) | each turn beginning | length warning, a work log, notice repetition |
 | [turn.step](turn-step.md) | each reply Claude produces | shorten long answers, count rule breaks, catch a cut-off answer |
 | [turn.complete](turn-complete.md) | the finished turn | check written files, a retro log, a sound when it ends |
@@ -57,6 +57,29 @@ The reason to use one instead of writing a rule in `CLAUDE.md`: a rule is a requ
 | [engine.create](engine-create.md) | the `$` interface every hook receives | add your own capability, cache it, audit every file read |
 
 ---
+
+## Things that appear on several pages
+
+Four sketches are two halves of one feature. Build both, or neither.
+
+| Feature | One half | The other half |
+|---|---|---|
+| Short answers on screen, full answers for Claude | [turn.step](turn-step.md) writes the short version | [ui.render](ui-render.md) draws it |
+| How long a turn took | [turn.start](turn-start.md) records the start | [turn.complete](turn-complete.md) reads it back |
+| Never touch the wrong cluster | [ui.render](ui-render.md) shows it, [ui.select](ui-select.md) switches it | [tool.call](tool-call.md) checks it before the command |
+| Get the right reviewers | [attribution.text](attribution-text.md) works out who | [ui.select](ui-select.md) lets you pick |
+
+Three patterns repeat with the event swapped. Each is explained once and referenced after that.
+
+| Pattern | Explained in | Used again in |
+|---|---|---|
+| Count something in `$.store` | [turn.step](turn-step.md) | [skill.prompt](skill-prompt.md), [ui.resolve](ui-resolve.md), [ui.input](ui-input.md) |
+| Split-test two versions | [prompt.section](prompt-section.md) | [skill.prompt](skill-prompt.md) |
+| Write a log line to a file | [tool.call](tool-call.md) | [turn.complete](turn-complete.md), [agent.spawn](agent-spawn.md), [engine.create](engine-create.md) |
+
+Registering tools appears twice, on purpose. [session.start](session-start.md) decides by folder, before the first message. [prompt.submit](prompt-submit.md) decides by what you just asked for, one message at a time.
+
+Two pages sound alike and are not. [prompt.context](prompt-context.md) attaches a fact to every session. [prompt.submit](prompt-submit.md) attaches one only when your words match. The first is for what Claude always needs; the second for what it sometimes needs.
 
 ## Before you try one
 

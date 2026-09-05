@@ -60,7 +60,7 @@ on('ui.select', { element: 'reviewer' }, async ($, e, next) => {
 })
 ```
 
-The choice is written to a file. The next turn, or a later hook, acts on it.
+The choice is written to a file. The next turn, or a later hook, acts on it. [attribution-text.md](attribution-text.md) works out the candidate names from the changed files.
 
 **Why not decide in chat?** Because a list of four names is a list, not a conversation.
 
